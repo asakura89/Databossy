@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Databossy")]
+[assembly: AssemblyTitle("Databossy.NET20")]
 [assembly: AssemblyDescription("Query your data like a boss")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("ASMNetworkLab")]
-[assembly: AssemblyProduct("Databossy")]
+[assembly: AssemblyProduct("Databossy.NET20")]
 [assembly: AssemblyCopyright("Copyright © ASMNetworkLab 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("daa588b7-5070-4264-a196-2d9b5d09d94e")]
+[assembly: Guid("d60f91f3-144a-4275-a3eb-8d0b55f2ff19")]
 
 // Version information for an assembly consists of the following four values:
 //

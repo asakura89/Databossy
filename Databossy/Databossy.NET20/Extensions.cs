@@ -3,7 +3,16 @@ using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 
-namespace Databossy
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public class ExtensionAttribute : Attribute
+    {
+
+    }
+}
+
+namespace Databossy.NET20
 {
     public static class Extensions
     {
@@ -11,8 +20,8 @@ namespace Databossy
         {
             foreach (DataRow dataRow in dt.Rows)
             {
-                var t = Activator.CreateInstance<TResult>();
-                Type tType = typeof (TResult);
+                TResult t = Activator.CreateInstance<TResult>();
+                Type tType = typeof(TResult);
                 PropertyInfo[] tProperties = tType.GetProperties();
                 FieldInfo[] tFields = tType.GetFields();
 
@@ -49,6 +58,29 @@ namespace Databossy
         public static String ToDateTimeForSQL(this DateTime datetime)
         {
             return datetime.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        public static TResult FirstOrDefault<TResult>(this IEnumerable<TResult> source)
+        {
+            if (source == null)
+                throw new ArgumentNullException("source");
+
+            IList<TResult> list = source as IList<TResult>;
+            if (list != null)
+            {
+                if (list.Count > 0)
+                    return list[0];
+            }
+            else
+            {
+                using (IEnumerator<TResult> enumerator = source.GetEnumerator())
+                {
+                    if (enumerator.MoveNext())
+                        return enumerator.Current;
+                }
+            }
+
+            return default(TResult);
         }
     }
 }

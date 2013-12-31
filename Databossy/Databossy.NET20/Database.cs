@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
 
-namespace Databossy
+namespace Databossy.NET20
 {
     public class Database : IDisposable
     {
