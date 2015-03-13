@@ -25,7 +25,7 @@ namespace Databossy.Sql
                     valueString = value.ToString();
                     break;
                 case Type.DATETIME:
-                    valueString = Convert.ToDateTime(value).ToDateTimeForSQL();
+                    valueString = Convert.ToDateTime(value).ToDateTimeForSql();
                     break;
             }
 

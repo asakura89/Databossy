@@ -4,27 +4,28 @@ using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Reflection;
 
 namespace Databossy
 {
     public class Database : IDisposable
     {
-        private const String SQL_SERVER_PROVIDER = "System.Data.SqlClient";
+        private const String SqlServerProvider = "System.Data.SqlClient";
         private DbConnection connection;
         private DbProviderFactory factory;
         private Byte openedConnectionCount = 0;
 
         public enum ConnectionStringType
         {
-            CONNECTION_STRING,
-            CONNECTION_STRING_NAME
+            ConnectionString,
+            ConnectionStringName
         }
 
         public Database() : this(ConfigurationManager.ConnectionStrings[0].Name) { }
 
-        public Database(String connectionString, String provider = SQL_SERVER_PROVIDER) : this(connectionString, ConnectionStringType.CONNECTION_STRING_NAME, provider) { }
+        public Database(String connectionString, String provider = SqlServerProvider) : this(connectionString, ConnectionStringType.ConnectionStringName, provider) { }
 
-        public Database(String connectionString, ConnectionStringType connectionStringType, String provider = SQL_SERVER_PROVIDER)
+        public Database(String connectionString, ConnectionStringType connectionStringType, String provider = SqlServerProvider)
         {
             Open(connectionString, connectionStringType, provider);
         }
@@ -40,10 +41,10 @@ namespace Databossy
 
                 switch (connectionStringType)
                 {
-                    case ConnectionStringType.CONNECTION_STRING:
+                    case ConnectionStringType.ConnectionString:
                         connection.ConnectionString = connectionString;
                         break;
-                    case ConnectionStringType.CONNECTION_STRING_NAME:
+                    case ConnectionStringType.ConnectionStringName:
                         String connString = ConfigurationManager.ConnectionStrings[connectionString].ConnectionString;
                         connection.ConnectionString = connString;
                         break;
@@ -78,25 +79,49 @@ namespace Databossy
             return builtSqlCommand;
         }
 
-        private DbCommand BuildSqlCommand(String queryString, Object[] args)
+        private DbCommand BuildSqlCommand(String queryString, Object[] queryParams)
         {
             DbCommand builtSqlCommand = connection.CreateCommand();
             builtSqlCommand.CommandText = queryString;
             builtSqlCommand.CommandType = CommandType.Text;
-            BuildSqlCommandParameter(ref builtSqlCommand, args);
+            BuildSqlCommandParameter(ref builtSqlCommand, queryParams);
 
             return builtSqlCommand;
         }
 
-        private void BuildSqlCommandParameter(ref DbCommand builtSqlCommand, Object[] queryParameters)
+        private DbCommand BuildSqlCommand<TParam>(String queryString, TParam paramObj)
+        {
+            DbCommand builtSqlCommand = connection.CreateCommand();
+            builtSqlCommand.CommandText = queryString;
+            builtSqlCommand.CommandType = CommandType.Text;
+            BuildSqlCommandParameter(ref builtSqlCommand, paramObj);
+
+            return builtSqlCommand;
+        }
+
+        private void BuildSqlCommandParameter(ref DbCommand builtSqlCommand, Object[] queryParams)
         {
             builtSqlCommand.Parameters.Clear();
-            for (Int32 paramIdx = 0; paramIdx < queryParameters.Length; paramIdx++)
+            for (Int32 paramIdx = 0; paramIdx < queryParams.Length; paramIdx++)
             {
-                Object currentArgs = queryParameters[paramIdx] ?? DBNull.Value;
+                Object currentqueryParams = queryParams[paramIdx] ?? DBNull.Value;
                 DbParameter param = builtSqlCommand.CreateParameter();
                 param.ParameterName = paramIdx.ToString();
-                param.Value = currentArgs;
+                param.Value = currentqueryParams;
+                builtSqlCommand.Parameters.Add(param);
+            }
+        }
+
+        private void BuildSqlCommandParameter<TParam>(ref DbCommand builtSqlCommand, TParam paramObj)
+        {
+            builtSqlCommand.Parameters.Clear();
+            PropertyInfo[] properties = paramObj.GetType().GetProperties();
+            foreach (PropertyInfo currentProperty in properties)
+            {
+                Object currentParam = currentProperty.GetValue(paramObj, null) ?? DBNull.Value;
+                DbParameter param = builtSqlCommand.CreateParameter();
+                param.ParameterName = currentProperty.Name;
+                param.Value = currentParam;
                 builtSqlCommand.Parameters.Add(param);
             }
         }
@@ -111,7 +136,7 @@ namespace Databossy
             return builtDataAdapter;
         }
 
-        public DataTable Query(String queryString)
+        public DataTable QueryDataTable(String queryString)
         {
             var dt = new DataTable();
             using (DbCommand cmd = BuildSqlCommand(queryString))
@@ -123,10 +148,10 @@ namespace Databossy
             return dt;
         }
 
-        public DataTable Query(String queryString, params Object[] args)
+        public DataTable QueryDataTable(String queryString, params Object[] queryParams)
         {
             var dt = new DataTable();
-            using (DbCommand cmd = BuildSqlCommand(queryString, args))
+            using (DbCommand cmd = BuildSqlCommand(queryString, queryParams))
             {
                 using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
                     dataAdapter.Fill(dt);
@@ -135,17 +160,72 @@ namespace Databossy
             return dt;
         }
 
+        public DataTable QueryDataTable<TParam>(String queryString, TParam paramObj)
+        {
+            var dt = new DataTable();
+            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+            {
+                using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
+                    dataAdapter.Fill(dt);
+            }
+
+            return dt;
+        }
+
+        public DataSet QueryDataSet(String queryString)
+        {
+            var ds = new DataSet();
+            using (DbCommand cmd = BuildSqlCommand(queryString))
+            {
+                using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
+                    dataAdapter.Fill(ds);
+            }
+
+            return ds;
+        }
+
+        public DataSet QueryDataSet(String queryString, params Object[] queryParams)
+        {
+            var ds = new DataSet();
+            using (DbCommand cmd = BuildSqlCommand(queryString, queryParams))
+            {
+                using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
+                    dataAdapter.Fill(ds);
+            }
+
+            return ds;
+        }
+        public DataSet QueryDataSet<TParam>(String queryString, TParam paramObj)
+        {
+            var ds = new DataSet();
+            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+            {
+                using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
+                    dataAdapter.Fill(ds);
+            }
+
+            return ds;
+        }
+
         public IEnumerable<T> Query<T>(String queryString)
         {
-            DataTable dt = Query(queryString);
+            DataTable dt = QueryDataTable(queryString);
             IEnumerable<T> result = dt.ToIEnumerable<T>();
 
             return result;
         }
 
-        public IEnumerable<T> Query<T>(String queryString, params Object[] args)
+        public IEnumerable<T> Query<T>(String queryString, params Object[] queryParams)
         {
-            DataTable dt = Query(queryString, args);
+            DataTable dt = QueryDataTable(queryString, queryParams);
+            IEnumerable<T> result = dt.ToIEnumerable<T>();
+
+            return result;
+        }
+
+        public IEnumerable<T> Query<T, TParam>(String queryString, TParam paramObj)
+        {
+            DataTable dt = QueryDataTable(queryString, paramObj);
             IEnumerable<T> result = dt.ToIEnumerable<T>();
 
             return result;
@@ -158,9 +238,16 @@ namespace Databossy
             return result;
         }
 
-        public T QuerySingle<T>(String queryString, params Object[] args)
+        public T QuerySingle<T>(String queryString, params Object[] queryParams)
         {
-            T result = Query<T>(queryString, args).FirstOrDefault();
+            T result = Query<T>(queryString, queryParams).FirstOrDefault();
+
+            return result;
+        }
+
+        public T QuerySingle<T, TParam>(String queryString, TParam paramObj)
+        {
+            T result = Query<T>(queryString, paramObj).FirstOrDefault();
 
             return result;
         }
@@ -171,16 +258,22 @@ namespace Databossy
                 return (T)cmd.ExecuteScalar();
         }
 
-        public T QueryScalar<T>(String queryString, params Object[] args)
+        public T QueryScalar<T>(String queryString, params Object[] queryParams)
         {
-            using (DbCommand cmd = BuildSqlCommand(queryString, args))
+            using (DbCommand cmd = BuildSqlCommand(queryString, queryParams))
                 return (T)cmd.ExecuteScalar();
         }
 
-        public Int32 Execute(String queryString, params Object[] args)
+        public T QueryScalar<T, TParam>(String queryString, TParam paramObj)
+        {
+            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+                return (T)cmd.ExecuteScalar();
+        }
+
+        public Int32 Execute(String queryString)
         {
             Int32 result = -1;
-            using (DbCommand cmd = BuildSqlCommand(queryString, args))
+            using (DbCommand cmd = BuildSqlCommand(queryString))
             {
                 cmd.Transaction = connection.BeginTransaction();
                 try
@@ -198,10 +291,31 @@ namespace Databossy
             return result;
         }
 
-        public Int32 Execute(String queryString)
+        public Int32 Execute(String queryString, params Object[] queryParams)
         {
             Int32 result = -1;
-            using (DbCommand cmd = BuildSqlCommand(queryString))
+            using (DbCommand cmd = BuildSqlCommand(queryString, queryParams))
+            {
+                cmd.Transaction = connection.BeginTransaction();
+                try
+                {
+                    result = cmd.ExecuteNonQuery();
+                    cmd.Transaction.Commit();
+                }
+                catch
+                {
+                    cmd.Transaction.Rollback();
+                    throw;
+                }
+            }
+
+            return result;
+        }
+
+        public Int32 Execute<TParam>(String queryString, TParam paramObj)
+        {
+            Int32 result = -1;
+            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
             {
                 cmd.Transaction = connection.BeginTransaction();
                 try

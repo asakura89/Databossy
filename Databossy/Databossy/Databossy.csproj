@@ -69,8 +69,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files\Microsoft SDKs\Windows\v6.0A\Bin\gacutil.exe" /i "$(TargetPath)" /f /nologo
-"C:\Program Files\Microsoft SDKs\Windows\v6.0A\Bin\gacutil.exe" /l "$(TargetName)" /nologo</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

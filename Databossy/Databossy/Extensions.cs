@@ -41,12 +41,12 @@ namespace Databossy
             }
         }
 
-        public static String ToDateForSQL(this DateTime datetime)
+        public static String ToDateForSql(this DateTime datetime)
         {
             return datetime.ToString("yyyy-MM-dd");
         }
 
-        public static String ToDateTimeForSQL(this DateTime datetime)
+        public static String ToDateTimeForSql(this DateTime datetime)
         {
             return datetime.ToString("yyyy-MM-dd HH:mm:ss");
         }
