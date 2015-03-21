@@ -41,6 +41,17 @@ namespace Databossy
             }
         }
 
+#if NET2
+        public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+
+            using (IEnumerator<TSource> e = source.GetEnumerator())
+                return e.MoveNext() ? e.Current : default(TSource);
+        }
+#endif
+
+
         public static String ToDateForSql(this DateTime datetime)
         {
             return datetime.ToString("yyyy-MM-dd");

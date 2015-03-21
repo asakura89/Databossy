@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.Common;
+#if !NET2
 using System.Linq;
+#endif
 using System.Reflection;
 
 namespace Databossy
