@@ -4,7 +4,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-//using System.Reflection;
+using System.Reflection;
 
 namespace Databossy
 {
@@ -210,7 +210,7 @@ namespace Databossy
         public IEnumerable<T> Query<T>(String queryString)
         {
             DataTable dt = QueryDataTable(queryString);
-            IEnumerable<T> result = dt.ToIEnumerable<T>();
+            IEnumerable<T> result = ToIEnumerable<T>(dt);
 
             return result;
         }
@@ -218,7 +218,7 @@ namespace Databossy
         public IEnumerable<T> Query<T>(String queryString, params Object[] queryParams)
         {
             DataTable dt = QueryDataTable(queryString, queryParams);
-            IEnumerable<T> result = dt.ToIEnumerable<T>();
+            IEnumerable<T> result = ToIEnumerable<T>(dt);
 
             return result;
         }
@@ -313,6 +313,40 @@ namespace Databossy
         {
             Close();
             GC.SuppressFinalize(this);
+        }
+
+        private IEnumerable<TResult> ToIEnumerable<TResult>(DataTable dt)
+        {
+            foreach (DataRow dataRow in dt.Rows)
+            {
+                var t = Activator.CreateInstance<TResult>();
+                Type tType = typeof(TResult);
+                PropertyInfo[] tProperties = tType.GetProperties();
+                FieldInfo[] tFields = tType.GetFields();
+
+                if (tProperties.Length != 0)
+                {
+                    foreach (PropertyInfo property in tProperties)
+                    {
+                        Type propertyType = property.PropertyType;
+
+                        if (dataRow[property.Name] != DBNull.Value)
+                            property.SetValue(t, Convert.ChangeType(dataRow[property.Name], propertyType), null);
+                    }
+                }
+                else
+                {
+                    foreach (FieldInfo field in tFields)
+                    {
+                        Type fieldType = field.FieldType;
+
+                        if (dataRow[field.Name] != DBNull.Value)
+                            field.SetValue(t, Convert.ChangeType(dataRow[field.Name], fieldType));
+                    }
+                }
+
+                yield return t;
+            }
         }
     }
 }
