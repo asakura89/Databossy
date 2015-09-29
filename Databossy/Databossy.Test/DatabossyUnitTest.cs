@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Databossy.Test
@@ -38,7 +39,7 @@ namespace Databossy.Test
             IList<Product> pList = null;
             using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
                 pList = db
-                    .Query<Product>("SELECT * FROM [main].Product WHERE CategoryId = @0", categoryId)
+                    .Query<Product>("SELECT * FROM Product WHERE CategoryId = @0", categoryId)
                     .ToList();
 
             Assert.IsNotNull(pList);
@@ -48,17 +49,67 @@ namespace Databossy.Test
         }
 
         [TestMethod]
+        public void QueryDataSetTest()
+        {
+            DataSet ds = null;
+            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+                ds = db.QueryDataSet("SELECT * FROM Category; SELECT * FROM Product;");
+
+            Assert.IsNotNull(ds);
+            Assert.IsTrue(ds.Tables.Count == 2);
+            Assert.IsTrue(ds.Tables[0].Rows.Count > 0);
+            Assert.IsTrue(ds.Tables[1].Rows.Count > 0);
+        }
+
+        [TestMethod]
+        public void QueryDataTableTest()
+        {
+            const String productId = "PROD07341";
+            DataTable dt = null;
+            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+                dt = db.QueryDataTable("SELECT * FROM Product WHERE [Id] = @0", productId);
+
+            Assert.IsNotNull(dt);
+            Assert.IsTrue(dt.Rows.Count > 0);
+        }
+
+        [TestMethod]
+        public void QueryScalarTest()
+        {
+            const String categoryId = "CAT28789";
+            Int64 productCount = 0;
+            Boolean isExists = false;
+            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            {
+                // NOTE: EXISTS and COUNT in sqlite return object {long} type and value is case-sensitive
+                productCount = db.QueryScalar<Int64>("SELECT COUNT(0) FROM Product WHERE CategoryId = @0", categoryId);
+                isExists = Convert.ToBoolean(
+                    db.QueryScalar<Int64>("SELECT EXISTS (SELECT * FROM sqlite_master WHERE type = 'table' AND name = @0);", "Product"));
+            }
+
+            Assert.IsTrue(productCount != 0);
+            Assert.IsTrue(productCount > 1);
+
+            Assert.IsTrue(isExists);
+        }
+
+        [TestMethod]
         public void QuerySingleTest()
         {
             const String productId = "PROD07341";
-            Product p = null;
+            ProductViewModel pVM = null;
+            var query = new StringBuilder()
+                .Append("SELECT p.[Id], p.[Name], c.[Desc] CategoryJ ")
+                .Append("FROM Product p JOIN Category c ON c.[Id] = p.CategoryId ")
+                .Append("WHERE p.[Id] = @0")
+                .ToString();
+
             using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
-                p = db.QuerySingle<Product>("SELECT * FROM [main].Product WHERE [Id] = @0", productId);
+                pVM = db.QuerySingle<ProductViewModel>(query, productId);
 
-            Assert.IsNotNull(p);
-            Assert.AreEqual(p.Id, productId);
-        }
-
-        
+            Assert.IsNotNull(pVM);
+            Assert.AreEqual(pVM.Id, productId);
+            Assert.IsFalse(String.IsNullOrEmpty(pVM.CategoryJ));
+        }   
     }
 }
