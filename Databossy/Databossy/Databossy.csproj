@@ -39,7 +39,8 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>Databossy.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -48,25 +49,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ObjectBase.cs" />
-    <Compile Include="Sql\Criteria.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Sql\InsertUpdateValue.cs" />
-    <Compile Include="Sql\Join.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sql\QueryBuilder.cs" />
-    <Compile Include="Sql\QueryBuilderEx.cs" />
-    <Compile Include="Sql\Sort.cs" />
-    <Compile Include="Sql\CommonDataType.cs" />
     <Compile Include="Database.cs" />
-    <Compile Include="Sql\DataTypeMapper.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Persistence\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Databossy.pfx" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
