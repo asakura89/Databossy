@@ -89,15 +89,15 @@ namespace Databossy
             return builtSqlCommand;
         }
 
-        /*private DbCommand BuildSqlCommand<TParam>(String queryString, TParam paramObj)
+        private DbCommand NBuildSqlCommand<TParam>(String queryString, TParam paramObj)
         {
             DbCommand builtSqlCommand = connection.CreateCommand();
             builtSqlCommand.CommandText = queryString;
             builtSqlCommand.CommandType = CommandType.Text;
-            BuildSqlCommandParameter(ref builtSqlCommand, paramObj);
+            NBuildSqlCommandParameter(ref builtSqlCommand, paramObj);
 
             return builtSqlCommand;
-        }*/
+        }
 
         private void BuildSqlCommandParameter(ref DbCommand builtSqlCommand, Object[] queryParams)
         {
@@ -112,7 +112,7 @@ namespace Databossy
             }
         }
 
-        /*private void BuildSqlCommandParameter<TParam>(ref DbCommand builtSqlCommand, TParam paramObj)
+        private void NBuildSqlCommandParameter<TParam>(ref DbCommand builtSqlCommand, TParam paramObj)
         {
             builtSqlCommand.Parameters.Clear();
             PropertyInfo[] properties = paramObj.GetType().GetProperties();
@@ -124,7 +124,7 @@ namespace Databossy
                 param.Value = currentParam;
                 builtSqlCommand.Parameters.Add(param);
             }
-        }*/
+        }
 
         private DbDataAdapter BuildSelectDataAdapter(DbCommand builtSqlCommand)
         {
@@ -160,17 +160,17 @@ namespace Databossy
             return dt;
         }
 
-        /*public DataTable QueryDataTable<TParam>(String queryString, TParam paramObj)
+        public DataTable NQueryDataTable<TParam>(String queryString, TParam paramObj)
         {
             var dt = new DataTable();
-            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+            using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
             {
                 using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
                     dataAdapter.Fill(dt);
             }
 
             return dt;
-        }*/
+        }
 
         public DataSet QueryDataSet(String queryString)
         {
@@ -195,17 +195,18 @@ namespace Databossy
 
             return ds;
         }
-        /*public DataSet QueryDataSet<TParam>(String queryString, TParam paramObj)
+
+        public DataSet NQueryDataSet<TParam>(String queryString, TParam paramObj)
         {
             var ds = new DataSet();
-            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+            using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
             {
                 using (DbDataAdapter dataAdapter = BuildSelectDataAdapter(cmd))
                     dataAdapter.Fill(ds);
             }
 
             return ds;
-        }*/
+        }
 
         public IEnumerable<T> Query<T>(String queryString)
         {
@@ -223,13 +224,13 @@ namespace Databossy
             return result;
         }
 
-        /*public IEnumerable<T> Query<T, TParam>(String queryString, TParam paramObj)
+        public IEnumerable<T> NQuery<T, TParam>(String queryString, TParam paramObj)
         {
             DataTable dt = QueryDataTable(queryString, paramObj);
-            IEnumerable<T> result = dt.ToIEnumerable<T>();
+            IEnumerable<T> result = ToIEnumerable<T>(dt);
 
             return result;
-        }*/
+        }
 
         public T QuerySingle<T>(String queryString)
         {
@@ -245,12 +246,12 @@ namespace Databossy
             return result;
         }
 
-        /*public T QuerySingle<T, TParam>(String queryString, TParam paramObj)
+        public T NQuerySingle<T, TParam>(String queryString, TParam paramObj)
         {
             T result = Query<T>(queryString, paramObj).FirstOrDefault();
 
             return result;
-        }*/
+        }
 
         public T QueryScalar<T>(String queryString)
         {
@@ -264,11 +265,11 @@ namespace Databossy
                 return (T)cmd.ExecuteScalar();
         }
 
-        /*public T QueryScalar<T, TParam>(String queryString, TParam paramObj)
+        public T NQueryScalar<T, TParam>(String queryString, TParam paramObj)
         {
-            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+            using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
                 return (T)cmd.ExecuteScalar();
-        }*/
+        }
 
         public Int32 Execute(String queryString)
         {
@@ -288,26 +289,34 @@ namespace Databossy
             return result;
         }
 
-        /*public Int32 Execute<TParam>(String queryString, TParam paramObj)
+        public Int32 NExecute<TParam>(String queryString, TParam paramObj)
         {
             Int32 result = -1;
-            using (DbCommand cmd = BuildSqlCommand(queryString, paramObj))
+            using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
+                result = cmd.ExecuteNonQuery();
+
+            return result;
+        }
+
+        public Int32 WithTransaction(Func<Database, Int32> doThisWithTrx)
+        {
+            Int32 result = -1;
+            using (DbTransaction trx = connection.BeginTransaction())
             {
-                cmd.Transaction = connection.BeginTransaction();
                 try
                 {
-                    result = cmd.ExecuteNonQuery();
-                    cmd.Transaction.Commit();
+                    result = doThisWithTrx(this);
+                    trx.Commit();
                 }
-                catch
+                catch (Exception)
                 {
-                    cmd.Transaction.Rollback();
+                    trx.Rollback();
                     throw;
                 }
             }
 
             return result;
-        }*/
+        }
 
         public void Dispose()
         {

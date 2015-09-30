@@ -35,6 +35,18 @@ namespace Databossy.Test
         [TestMethod]
         public void QueryTest()
         {
+            IList<Product> pList = null;
+            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+                pList = db.Query<Product>("SELECT * FROM Product").ToList();
+
+            Assert.IsNotNull(pList);
+            Assert.IsTrue(pList.Any());
+            Assert.IsTrue(pList.Count > 1);
+        }
+
+        [TestMethod]
+        public void QueryWParamTest()
+        {
             const String categoryId = "CAT28789";
             IList<Product> pList = null;
             using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
@@ -62,7 +74,33 @@ namespace Databossy.Test
         }
 
         [TestMethod]
+        public void QueryDataSetWParamTest()
+        {
+            const String categoryId = "CAT28789";
+            DataSet ds = null;
+            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+                ds = db.QueryDataSet("SELECT * FROM Category; SELECT * FROM Product; SELECT COUNT(0) FROM Product WHERE CategoryId = @0", categoryId);
+
+            Assert.IsNotNull(ds);
+            Assert.IsTrue(ds.Tables.Count == 3);
+            Assert.IsTrue(ds.Tables[0].Rows.Count > 0);
+            Assert.IsTrue(ds.Tables[1].Rows.Count > 0);
+            Assert.IsTrue(ds.Tables[2].Rows.Count == 1);
+        }
+
+        [TestMethod]
         public void QueryDataTableTest()
+        {
+            DataTable dt = null;
+            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+                dt = db.QueryDataTable("SELECT * FROM Product");
+
+            Assert.IsNotNull(dt);
+            Assert.IsTrue(dt.Rows.Count > 0);
+        }
+
+        [TestMethod]
+        public void QueryDataTableWParamTest()
         {
             const String productId = "PROD07341";
             DataTable dt = null;
@@ -110,6 +148,12 @@ namespace Databossy.Test
             Assert.IsNotNull(pVM);
             Assert.AreEqual(pVM.Id, productId);
             Assert.IsFalse(String.IsNullOrEmpty(pVM.CategoryJ));
-        }   
+        }
+
+        [TestMethod]
+        public void WithTransactionTest()
+        {
+            
+        }
     }
 }
