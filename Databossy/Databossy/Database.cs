@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Databossy
 {
@@ -114,8 +115,9 @@ namespace Databossy
 
         private void NBuildSqlCommandParameter<TParam>(ref DbCommand builtSqlCommand, TParam paramObj)
         {
+            PropertyInfo[] properties = ValidateAndGetNParam(builtSqlCommand.CommandText, paramObj);
+
             builtSqlCommand.Parameters.Clear();
-            PropertyInfo[] properties = paramObj.GetType().GetProperties();
             foreach (PropertyInfo currentProperty in properties)
             {
                 Object currentParam = currentProperty.GetValue(paramObj, null) ?? DBNull.Value;
@@ -124,6 +126,22 @@ namespace Databossy
                 param.Value = currentParam;
                 builtSqlCommand.Parameters.Add(param);
             }
+        }
+
+        private PropertyInfo[] ValidateAndGetNParam(String queryString, Object paramObj)
+        {
+            var queryParamRgx = new Regex("(?<!@)@\\w+", RegexOptions.Compiled);
+            MatchCollection definedParams = queryParamRgx.Matches(queryString);
+            PropertyInfo[] properties = paramObj.GetType().GetProperties();
+            foreach (Match param in definedParams)
+            {
+                String closureParam = param.Value.Replace("@", "");
+                PropertyInfo foundProperty = properties.FirstOrDefault(p => p.Name == closureParam);
+                if (foundProperty == null)
+                    throw new InvalidOperationException("Sql Param \"" + closureParam + "\" is defined but value isn't supplied.");
+            }
+
+            return properties;
         }
 
         private DbDataAdapter BuildSelectDataAdapter(DbCommand builtSqlCommand)
@@ -160,7 +178,7 @@ namespace Databossy
             return dt;
         }
 
-        public DataTable NQueryDataTable<TParam>(String queryString, TParam paramObj)
+        public DataTable NQueryDataTable(String queryString, Object paramObj)
         {
             var dt = new DataTable();
             using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
@@ -196,7 +214,7 @@ namespace Databossy
             return ds;
         }
 
-        public DataSet NQueryDataSet<TParam>(String queryString, TParam paramObj)
+        public DataSet NQueryDataSet(String queryString, Object paramObj)
         {
             var ds = new DataSet();
             using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
@@ -224,9 +242,9 @@ namespace Databossy
             return result;
         }
 
-        public IEnumerable<T> NQuery<T, TParam>(String queryString, TParam paramObj)
+        public IEnumerable<T> NQuery<T>(String queryString, Object paramObj)
         {
-            DataTable dt = QueryDataTable(queryString, paramObj);
+            DataTable dt = NQueryDataTable(queryString, paramObj);
             IEnumerable<T> result = ToIEnumerable<T>(dt);
 
             return result;
@@ -246,9 +264,9 @@ namespace Databossy
             return result;
         }
 
-        public T NQuerySingle<T, TParam>(String queryString, TParam paramObj)
+        public T NQuerySingle<T>(String queryString, Object paramObj)
         {
-            T result = Query<T>(queryString, paramObj).FirstOrDefault();
+            T result = NQuery<T>(queryString, paramObj).FirstOrDefault();
 
             return result;
         }
@@ -289,7 +307,7 @@ namespace Databossy
             return result;
         }
 
-        public Int32 NExecute<TParam>(String queryString, TParam paramObj)
+        public Int32 NExecute(String queryString, Object paramObj)
         {
             Int32 result = -1;
             using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
