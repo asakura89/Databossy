@@ -6,6 +6,8 @@ using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Transactions;
+using IsolationLevel = System.Transactions.IsolationLevel;
 
 namespace Databossy
 {
@@ -319,21 +321,22 @@ namespace Databossy
         public Int32 WithTransaction(Func<Database, Int32> doThisWithTrx)
         {
             Int32 result = -1;
-            using (DbTransaction trx = connection.BeginTransaction())
+            using (var scope = CreateTransactionScope())
             {
-                try
-                {
-                    result = doThisWithTrx(this);
-                    trx.Commit();
-                }
-                catch (Exception)
-                {
-                    trx.Rollback();
-                    throw;
-                }
+                result = doThisWithTrx(this);
+                scope.Complete();
             }
 
             return result;
+        }
+
+        // NOTE: https://blogs.msdn.microsoft.com/dbrowne/2010/06/03/using-new-transactionscope-considered-harmful/
+        private TransactionScope CreateTransactionScope()
+        {
+            var options = new TransactionOptions();
+            options.IsolationLevel = IsolationLevel.ReadCommitted;
+            options.Timeout = TransactionManager.MaximumTimeout;
+            return new TransactionScope(TransactionScopeOption.Required, options);
         }
 
         public void Dispose()
