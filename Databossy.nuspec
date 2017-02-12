@@ -2,19 +2,17 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Databossy</id>
-        <version>0.1.1</version>
+        <version>0.1.2</version>
         <authors>asakura89</authors>
         <owners>asakura89</owners>
         <projectUrl>https://github.com/asakura89/Databossy</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <title>Databossy</title>
         <description>Query your data like a boss.</description>
-        <copyright>Copyright 2013 - 2016</copyright>
+        <copyright>Copyright 2013 - 2017</copyright>
         <tags>database layer orm</tags>
     </metadata>
     <files>
-        <!--<file src="\build\net20\Databossy.dll" target="lib\net20" />
-        <file src="\build\net20\Databossy.pdb" target="lib\net20" />-->
         <file src="\build\net35\Databossy.dll" target="lib\net35" />
         <file src="\build\net35\Databossy.pdb" target="lib\net35" />
         <file src="\build\net40\Databossy.dll" target="lib\net40" />
