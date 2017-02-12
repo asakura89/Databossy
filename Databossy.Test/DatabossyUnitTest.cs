@@ -36,7 +36,7 @@ namespace Databossy.Test
         public void QueryTest()
         {
             IList<Product> pList = null;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 pList = db.Query<Product>("SELECT * FROM Product").ToList();
 
             Assert.IsNotNull(pList);
@@ -49,7 +49,7 @@ namespace Databossy.Test
         {
             const String categoryId = "CAT28789";
             IList<Product> pList = null;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 pList = db
                     .Query<Product>("SELECT * FROM Product WHERE CategoryId = @0", categoryId)
                     .ToList();
@@ -64,7 +64,7 @@ namespace Databossy.Test
         public void QueryDataSetTest()
         {
             DataSet ds = null;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 ds = db.QueryDataSet("SELECT * FROM Category; SELECT * FROM Product;");
 
             Assert.IsNotNull(ds);
@@ -78,7 +78,7 @@ namespace Databossy.Test
         {
             const String categoryId = "CAT28789";
             DataSet ds = null;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 ds = db.QueryDataSet("SELECT * FROM Category; SELECT * FROM Product; SELECT COUNT(0) FROM Product WHERE CategoryId = @0", categoryId);
 
             Assert.IsNotNull(ds);
@@ -92,7 +92,7 @@ namespace Databossy.Test
         public void QueryDataTableTest()
         {
             DataTable dt = null;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 dt = db.QueryDataTable("SELECT * FROM Product");
 
             Assert.IsNotNull(dt);
@@ -104,7 +104,7 @@ namespace Databossy.Test
         {
             const String productId = "PROD07341";
             DataTable dt = null;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 dt = db.QueryDataTable("SELECT * FROM Product WHERE [Id] = @0", productId);
 
             Assert.IsNotNull(dt);
@@ -117,7 +117,7 @@ namespace Databossy.Test
             const String categoryId = "CAT28789";
             Int64 productCount = 0;
             Boolean isExists = false;
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
             {
                 // NOTE: EXISTS and COUNT in sqlite return object {long} type and value is case-sensitive
                 productCount = db.QueryScalar<Int64>("SELECT COUNT(0) FROM Product WHERE CategoryId = @0", categoryId);
@@ -142,7 +142,7 @@ namespace Databossy.Test
                 .Append("WHERE p.[Id] = @0")
                 .ToString();
 
-            using (var db = new Database(ConnectionString, Database.ConnectionStringType.ConnectionString, Provider))
+            using (var db = new Database(ConnectionString, Database.ConnectionString.ConnectionString, Provider))
                 pVM = db.QuerySingle<ProductViewModel>(query, productId);
 
             Assert.IsNotNull(pVM);
