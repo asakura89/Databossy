@@ -28,7 +28,11 @@ nuget/
 # User-specific files
 *.suo
 *.user
+*.userosscache
 *.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
 
 # Build results
 
@@ -46,14 +50,13 @@ bld/
 # Roslyn cache directories
 *.ide/
 
-# Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
-!packages/*/build/
+
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
-#NUNIT
+# NUNIT
 *.VisualState.xml
 TestResult.xml
 
@@ -61,6 +64,10 @@ TestResult.xml
 [Dd]ebugPS/
 [Rr]eleasePS/
 dlldata.c
+
+# DNX
+project.lock.json
+artifacts/
 
 *_i.c
 *_p.c
@@ -84,7 +91,6 @@ dlldata.c
 *.vssscc
 .builds
 *.pidb
-*.log
 *.svclog
 *.scc
 
@@ -115,7 +121,7 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
 
-# JustCode is a .NET coding addin-in
+# JustCode is a .NET coding add-in
 .JustCode
 
 # TeamCity is a build add-in
@@ -166,9 +172,10 @@ publish/
 # The packages folder can be ignored because of Package Restore
 **/packages/*
 # except build/, which is used as an MSBuild target.
+# Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
 !**/packages/build/
 # If using the old MSBuild-Integrated Package Restore, uncomment this:
-#!**/packages/repositories.config
+!**/packages/repositories.config
 
 # Windows Azure Build Output
 csx/
@@ -185,11 +192,12 @@ ClientBin/
 ~$*
 *~
 *.dbmdl
-*.[Pp]ublish.xml
 *.pfx
 *.publishsettings
 *.dbproj.schemaview
 node_modules/
+bower_components/
+orleans.codegen.cs
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -206,11 +214,6 @@ App_Data/*.mdf
 App_Data/*.ldf
 
 
-#LightSwitch generated files
-GeneratedArtifacts/
-_Pvt_Extensions/
-ModelManifest.xml
-
 # Business Intelligence projects
 *.rdl.data
 *.bim.layout
@@ -218,6 +221,20 @@ ModelManifest.xml
 
 # Microsoft Fakes
 FakesAssemblies/
+
+# Node.js Tools for Visual Studio
+.ntvs_analysis.dat
+
+# Visual Studio 6 build log
+*.plg
+
+# Visual Studio 6 workspace options file
+*.opt
+
+#LightSwitch generated files
+GeneratedArtifacts/
+_Pvt_Extensions/
+ModelManifest.xml
 
 # =========================
 # Windows detritus
