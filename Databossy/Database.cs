@@ -13,21 +13,27 @@ namespace Databossy
 {
     public interface IDatabaseFactory
     {
-        IDatabase CreateDatabossySession();
+        IDatabase CreateSession();
+        IDatabase CreateSession(String connectionStringOrName, Boolean useConnectionString = false, String provider = Database.SqlServerProvider);
     }
 
     public class DatabaseFactory : IDatabaseFactory
     {
-        public IDatabase CreateDatabossySession()
+        public IDatabase CreateSession()
         {
-            return new Database();
+            return CreateSession(ConfigurationManager.ConnectionStrings[0].Name);
+        }
+
+        public IDatabase CreateSession(String connectionStringOrName, Boolean useConnectionString = false, String provider = Database.SqlServerProvider)
+        {
+            return new Database(connectionStringOrName, useConnectionString, provider);
         }
     }
 
     public interface IDatabase : IDisposable
     {
-        String ConnectionStringOrName { get; set; }
-        Database.ConnectionString Type { get; set; }
+        String ContextName { get; set; }
+        String ConnectionString { get; set; }
         String Provider { get; set; }
 
         DataTable QueryDataTable(String queryString);
@@ -53,29 +59,27 @@ namespace Databossy
 
     public class Database : IDatabase
     {
-        private const String SqlServerProvider = "System.Data.SqlClient";
+        internal const String SqlServerProvider = "System.Data.SqlClient";
         private DbConnection connection;
         private DbProviderFactory factory;
 
-        public String ConnectionStringOrName { get; set; }
-        public ConnectionString Type { get; set; }
+        public String ContextName { get; set; }
+        public String ConnectionString { get; set; }
         public String Provider { get; set; }
-
-        public enum ConnectionString
-        {
-            ConnectionString,
-            Name
-        }
 
         public Database() : this(ConfigurationManager.ConnectionStrings[0].Name) { }
 
-        public Database(String connectionStringOrName, String provider = SqlServerProvider) : this(connectionStringOrName, ConnectionString.Name, provider) { }
-
-        public Database(String connectionStringOrName, ConnectionString type, String provider = SqlServerProvider)
+        public Database(String connectionStringOrName, Boolean useConnectionString = false, String provider = SqlServerProvider)
         {
-            ConnectionStringOrName = connectionStringOrName;
-            Type = type;
             Provider = provider;
+            if (useConnectionString)
+                ConnectionString = connectionStringOrName;
+            else
+            {
+                String connString = ConfigurationManager.ConnectionStrings[connectionStringOrName].ConnectionString;
+                ConnectionString = connString;
+                ContextName = connectionStringOrName;
+            }
         }
 
         private void Open()
@@ -85,17 +89,7 @@ namespace Databossy
             if (connection == null)
                 throw new Exception("Connection creation from factory failed.");
 
-            switch (Type)
-            {
-                case ConnectionString.ConnectionString:
-                    connection.ConnectionString = ConnectionStringOrName;
-                    break;
-                case ConnectionString.Name:
-                    String connString = ConfigurationManager.ConnectionStrings[ConnectionStringOrName].ConnectionString;
-                    connection.ConnectionString = connString;
-                    break;
-            }
-
+            connection.ConnectionString = ConnectionString;
             connection.Open();
         }
 

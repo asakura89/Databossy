@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Databossy</id>
-        <version>1.2.2017.4304</version>
+        <version>2.0.2017.4929</version>
         <authors>asakura89</authors>
         <owners>asakura89</owners>
         <projectUrl>https://github.com/asakura89/Databossy</projectUrl>
