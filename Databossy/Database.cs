@@ -50,7 +50,7 @@ namespace Databossy
         T NQuerySingle<T>(String queryString, Object paramObj);
         T QueryScalar<T>(String queryString);
         T QueryScalar<T>(String queryString, params Object[] queryParams);
-        T NQueryScalar<T, TParam>(String queryString, TParam paramObj);
+        T NQueryScalar<T>(String queryString, Object paramObj);
         Int32 Execute(String queryString);
         Int32 Execute(String queryString, params Object[] queryParams);
         Int32 NExecute(String queryString, Object paramObj);
@@ -60,8 +60,8 @@ namespace Databossy
     public class Database : IDatabase
     {
         internal const String SqlServerProvider = "System.Data.SqlClient";
-        private DbConnection connection;
-        private DbProviderFactory factory;
+        DbConnection connection;
+        DbProviderFactory factory;
 
         public String ContextName { get; set; }
         public String ConnectionString { get; set; }
@@ -82,18 +82,18 @@ namespace Databossy
             }
         }
 
-        private void Open()
+        void Open()
         {
             factory = DbProviderFactories.GetFactory(Provider);
             connection = factory.CreateConnection();
             if (connection == null)
-                throw new Exception("Connection creation from factory failed.");
+                throw new InvalidOperationException("Connection creation from factory failed.");
 
             connection.ConnectionString = ConnectionString;
             connection.Open();
         }
 
-        private DbCommand BuildSqlCommand(String queryString)
+        DbCommand BuildSqlCommand(String queryString)
         {
             DbCommand builtSqlCommand = connection.CreateCommand();
             builtSqlCommand.CommandText = queryString;
@@ -102,7 +102,7 @@ namespace Databossy
             return builtSqlCommand;
         }
 
-        private DbCommand BuildSqlCommand(String queryString, Object[] queryParams)
+        DbCommand BuildSqlCommand(String queryString, Object[] queryParams)
         {
             DbCommand builtSqlCommand = connection.CreateCommand();
             builtSqlCommand.CommandText = queryString;
@@ -112,7 +112,7 @@ namespace Databossy
             return builtSqlCommand;
         }
 
-        private DbCommand NBuildSqlCommand<TParam>(String queryString, TParam paramObj)
+        DbCommand NBuildSqlCommand<TParam>(String queryString, TParam paramObj)
         {
             DbCommand builtSqlCommand = connection.CreateCommand();
             builtSqlCommand.CommandText = queryString;
@@ -122,7 +122,7 @@ namespace Databossy
             return builtSqlCommand;
         }
 
-        private void BuildSqlCommandParameter(ref DbCommand builtSqlCommand, Object[] queryParams)
+        void BuildSqlCommandParameter(ref DbCommand builtSqlCommand, Object[] queryParams)
         {
             builtSqlCommand.Parameters.Clear();
             for (Int32 paramIdx = 0; paramIdx < queryParams.Length; paramIdx++)
@@ -135,7 +135,7 @@ namespace Databossy
             }
         }
 
-        private void NBuildSqlCommandParameter<TParam>(ref DbCommand builtSqlCommand, TParam paramObj)
+        void NBuildSqlCommandParameter<TParam>(ref DbCommand builtSqlCommand, TParam paramObj)
         {
             PropertyInfo[] properties = ValidateAndGetNParam(builtSqlCommand.CommandText, paramObj);
 
@@ -150,7 +150,7 @@ namespace Databossy
             }
         }
 
-        private PropertyInfo[] ValidateAndGetNParam(String queryString, Object paramObj)
+        PropertyInfo[] ValidateAndGetNParam(String queryString, Object paramObj)
         {
             var queryParamRgx = new Regex("(?<!@)@\\w+", RegexOptions.Compiled);
             MatchCollection definedParams = queryParamRgx.Matches(queryString);
@@ -160,17 +160,17 @@ namespace Databossy
                 String closureParam = param.Value.Replace("@", "");
                 PropertyInfo foundProperty = properties.FirstOrDefault(p => p.Name == closureParam);
                 if (foundProperty == null)
-                    throw new InvalidOperationException("Sql Param \"" + closureParam + "\" is defined but value isn't supplied.");
+                    throw new InvalidOperationException($"Sql Param \"{closureParam}\" is defined but value isn't supplied.");
             }
 
             return properties;
         }
 
-        private DbDataAdapter BuildSelectDataAdapter(DbCommand builtSqlCommand)
+        DbDataAdapter BuildSelectDataAdapter(DbCommand builtSqlCommand)
         {
             DbDataAdapter builtDataAdapter = factory.CreateDataAdapter();
             if (builtDataAdapter == null)
-                throw new Exception("Data Adapter creation from factory failed.");
+                throw new InvalidOperationException("Data Adapter creation from factory failed.");
 
             builtDataAdapter.SelectCommand = builtSqlCommand;
             return builtDataAdapter;
@@ -292,52 +292,37 @@ namespace Databossy
             return result;
         }
 
-        public T QuerySingle<T>(String queryString)
-        {
-            T result = Query<T>(queryString).FirstOrDefault();
+        public T QuerySingle<T>(String queryString) => Query<T>(queryString).FirstOrDefault();
 
-            return result;
-        }
+        public T QuerySingle<T>(String queryString, params Object[] queryParams) => Query<T>(queryString, queryParams).FirstOrDefault();
 
-        public T QuerySingle<T>(String queryString, params Object[] queryParams)
-        {
-            T result = Query<T>(queryString, queryParams).FirstOrDefault();
-
-            return result;
-        }
-
-        public T NQuerySingle<T>(String queryString, Object paramObj)
-        {
-            T result = NQuery<T>(queryString, paramObj).FirstOrDefault();
-
-            return result;
-        }
+        public T NQuerySingle<T>(String queryString, Object paramObj) => NQuery<T>(queryString, paramObj).FirstOrDefault();
 
         public T QueryScalar<T>(String queryString)
         {
             Open();
             using (DbCommand cmd = BuildSqlCommand(queryString))
-                return (T)cmd.ExecuteScalar();
+                return (T) Convert.ChangeType(cmd.ExecuteScalar(), Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T));
         }
 
         public T QueryScalar<T>(String queryString, params Object[] queryParams)
         {
             Open();
             using (DbCommand cmd = BuildSqlCommand(queryString, queryParams))
-                return (T)cmd.ExecuteScalar();
+                return (T) Convert.ChangeType(cmd.ExecuteScalar(), Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T));
         }
 
-        public T NQueryScalar<T, TParam>(String queryString, TParam paramObj)
+        public T NQueryScalar<T>(String queryString, Object paramObj)
         {
             Open();
             using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
-                return (T)cmd.ExecuteScalar();
+                return (T) Convert.ChangeType(cmd.ExecuteScalar(), Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T));
         }
 
         public Int32 Execute(String queryString)
         {
             Open();
-            Int32 result = -1;
+            Int32 result;
             using (DbCommand cmd = BuildSqlCommand(queryString))
                 result = cmd.ExecuteNonQuery();
 
@@ -347,7 +332,7 @@ namespace Databossy
         public Int32 Execute(String queryString, params Object[] queryParams)
         {
             Open();
-            Int32 result = -1;
+            Int32 result;
             using (DbCommand cmd = BuildSqlCommand(queryString, queryParams))
                 result = cmd.ExecuteNonQuery();
 
@@ -357,7 +342,7 @@ namespace Databossy
         public Int32 NExecute(String queryString, Object paramObj)
         {
             Open();
-            Int32 result = -1;
+            Int32 result;
             using (DbCommand cmd = NBuildSqlCommand(queryString, paramObj))
                 result = cmd.ExecuteNonQuery();
 
@@ -367,7 +352,7 @@ namespace Databossy
         public Int32 WithTransaction(Func<Database, Int32> doThisWithTrx)
         {
             Open();
-            Int32 result = -1;
+            Int32 result;
             using (var scope = CreateTransactionScope())
             {
                 result = doThisWithTrx(this);
@@ -378,11 +363,14 @@ namespace Databossy
         }
 
         // NOTE: https://blogs.msdn.microsoft.com/dbrowne/2010/06/03/using-new-transactionscope-considered-harmful/
-        private TransactionScope CreateTransactionScope()
+        TransactionScope CreateTransactionScope()
         {
-            var options = new TransactionOptions();
-            options.IsolationLevel = IsolationLevel.ReadCommitted;
-            options.Timeout = TransactionManager.MaximumTimeout;
+            var options = new TransactionOptions
+            {
+                IsolationLevel = IsolationLevel.ReadCommitted,
+                Timeout = TransactionManager.MaximumTimeout
+            };
+
             return new TransactionScope(TransactionScopeOption.Required, options);
         }
 
@@ -400,7 +388,7 @@ namespace Databossy
             GC.SuppressFinalize(this);
         }
 
-        private TResult ToTResult<TResult>(IDataRecord record)
+        TResult ToTResult<TResult>(IDataRecord record)
         {
             var t = Activator.CreateInstance<TResult>();
             Type tType = typeof(TResult);
@@ -413,16 +401,27 @@ namespace Databossy
                 {
                     Object result = record[record.GetOrdinal(property.Name)];
                     if (result != DBNull.Value)
-                        property.SetValue(t, Convert.ChangeType(result, property.PropertyType), null);
+                    {
+                        Type safeType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                        Object safeResult = Convert.ChangeType(result, safeType);
+
+                        property.SetValue(t, safeResult, null);
+                    }
                 }
             }
-            else
+            
+            if (tFields.Length != 0)
             {
                 foreach (FieldInfo field in tFields)
                 {
                     Object result = record[record.GetOrdinal(field.Name)];
                     if (result != DBNull.Value)
-                        field.SetValue(t, Convert.ChangeType(result, field.FieldType));
+                    {
+                        Type safeType = Nullable.GetUnderlyingType(field.FieldType) ?? field.FieldType;
+                        Object safeResult = Convert.ChangeType(result, safeType);
+
+                        field.SetValue(t, safeResult);
+                    }
                 }
             }
 

@@ -6,24 +6,23 @@ using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Databossy.Test
-{
+namespace Databossy.Test {
     [TestClass]
-    public class DatabossyUnitTest
-    {
-        private const String Provider = "System.Data.SQLite";
-        private readonly String connectionString = "DataSource=" + AppDomain.CurrentDomain.BaseDirectory + "\\databossytest.db;Password=databossytest;Version=3;Compress=True;UTF8Encoding=True;Page Size=1024;FailIfMissing=False;Read Only=False;Pooling=True;Max Pool Size=100;";
-        private readonly IDatabaseFactory dbFactory = new DatabaseFactory();
+    public class DatabossyUnitTest {
+        const String Provider = "System.Data.SQLite";
 
-        public DatabossyUnitTest()
-        {
+        readonly String connectionString =
+                $"DataSource={AppDomain.CurrentDomain.BaseDirectory}\\databossytest.db;Password=databossytest;Version=3;Compress=True;UTF8Encoding=True;Page Size=1024;FailIfMissing=False;Read Only=False;Pooling=True;Max Pool Size=100;"
+            ;
+
+        readonly IDatabaseFactory dbFactory = new DatabaseFactory();
+
+        public DatabossyUnitTest() {
             InitializeSqliteDbProvider();
         }
 
-        private void InitializeSqliteDbProvider()
-        {
-            try
-            {
+        void InitializeSqliteDbProvider() {
+            try {
                 var configDs = ConfigurationManager.GetSection("system.data") as DataSet;
                 if (configDs != null)
                     configDs.Tables[0]
@@ -34,8 +33,7 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void QueryTest()
-        {
+        public void QueryTest() {
             IList<Product> pList = null;
             using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
                 pList = db.Query<Product>("SELECT * FROM Product").ToList();
@@ -46,8 +44,7 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void QueryWParamTest()
-        {
+        public void QueryWParamTest() {
             const String categoryId = "CAT28789";
             IList<Product> pList = null;
             using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
@@ -62,8 +59,22 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void QueryDataSetTest()
-        {
+        public void QueryWObjectParamTest() {
+            const String categoryId = "CAT28789";
+            IList<Product> pList = null;
+            using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
+                pList = db
+                    .NQuery<Product>("SELECT * FROM Product WHERE CategoryId = @Category", new {Category = categoryId})
+                    .ToList();
+
+            Assert.IsNotNull(pList);
+            Assert.IsTrue(pList.Any());
+            Assert.IsTrue(pList.Count > 1);
+            Assert.AreEqual(pList[0].CategoryId, categoryId);
+        }
+
+        [TestMethod]
+        public void QueryDataSetTest() {
             DataSet ds = null;
             using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
                 ds = db.QueryDataSet("SELECT * FROM Category; SELECT * FROM Product;");
@@ -75,23 +86,41 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void QueryDataSetWParamTest()
-        {
+        public void QueryDataSetWParamTest() {
             const String categoryId = "CAT28789";
             DataSet ds = null;
             using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
-                ds = db.QueryDataSet("SELECT * FROM Category; SELECT * FROM Product; SELECT COUNT(0) FROM Product WHERE CategoryId = @0", categoryId);
+                ds = db.QueryDataSet(
+                    "SELECT * FROM Category; SELECT * FROM Product; SELECT COUNT(0) FROM Product WHERE CategoryId = @0",
+                    categoryId);
 
             Assert.IsNotNull(ds);
             Assert.IsTrue(ds.Tables.Count == 3);
             Assert.IsTrue(ds.Tables[0].Rows.Count > 0);
             Assert.IsTrue(ds.Tables[1].Rows.Count > 0);
             Assert.IsTrue(ds.Tables[2].Rows.Count == 1);
+            Assert.AreEqual(Convert.ToInt32(ds.Tables[2].Rows[0][0]), 7);
         }
 
         [TestMethod]
-        public void QueryDataTableTest()
-        {
+        public void QueryDataSetWObjectParamTest() {
+            const String categoryId = "CAT28789";
+            DataSet ds = null;
+            using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
+                ds = db.NQueryDataSet(
+                    "SELECT * FROM Category; SELECT * FROM Product; SELECT COUNT(0) FROM Product WHERE CategoryId = @Category",
+                    new {Category = categoryId});
+
+            Assert.IsNotNull(ds);
+            Assert.IsTrue(ds.Tables.Count == 3);
+            Assert.IsTrue(ds.Tables[0].Rows.Count > 0);
+            Assert.IsTrue(ds.Tables[1].Rows.Count > 0);
+            Assert.IsTrue(ds.Tables[2].Rows.Count == 1);
+            Assert.AreEqual(Convert.ToInt32(ds.Tables[2].Rows[0][0]), 7);
+        }
+
+        [TestMethod]
+        public void QueryDataTableTest() {
             DataTable dt = null;
             using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
                 dt = db.QueryDataTable("SELECT * FROM Product");
@@ -101,8 +130,7 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void QueryDataTableWParamTest()
-        {
+        public void QueryDataTableWParamTest() {
             const String productId = "PROD07341";
             DataTable dt = null;
             using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
@@ -110,20 +138,34 @@ namespace Databossy.Test
 
             Assert.IsNotNull(dt);
             Assert.IsTrue(dt.Rows.Count > 0);
+            Assert.IsTrue(dt.Rows.Count == 1);
+            Assert.AreEqual(dt.Rows[0]["Id"].ToString(), productId);
         }
 
         [TestMethod]
-        public void QueryScalarTest()
-        {
+        public void QueryDataTableWObjectParamTest() {
+            const String productId = "PROD07341";
+            DataTable dt = null;
+            using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
+                dt = db.NQueryDataTable("SELECT * FROM Product WHERE [Id] = @Product", new {Product = productId});
+
+            Assert.IsNotNull(dt);
+            Assert.IsTrue(dt.Rows.Count > 0);
+            Assert.IsTrue(dt.Rows.Count == 1);
+            Assert.AreEqual(dt.Rows[0]["Id"].ToString(), productId);
+        }
+
+        [TestMethod]
+        public void QueryScalarTest() {
             const String categoryId = "CAT28789";
             Int64 productCount = 0;
             Boolean isExists = false;
-            using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider))
-            {
+            using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider)) {
                 // NOTE: EXISTS and COUNT in sqlite return object {long} type and value is case-sensitive
                 productCount = db.QueryScalar<Int64>("SELECT COUNT(0) FROM Product WHERE CategoryId = @0", categoryId);
                 isExists = Convert.ToBoolean(
-                    db.QueryScalar<Int64>("SELECT EXISTS (SELECT * FROM sqlite_master WHERE type = 'table' AND name = @0);", "Product"));
+                    db.QueryScalar<Int64>(
+                        "SELECT EXISTS (SELECT * FROM sqlite_master WHERE type = 'table' AND name = @0);", "Product"));
             }
 
             Assert.IsTrue(productCount != 0);
@@ -133,8 +175,31 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void QuerySingleTest()
-        {
+        public void QueryScalarNullableTest() {
+            const String categoryId = "CAT28789";
+            Int64 productCount = 0;
+            Int64? nullableCount = 0;
+            Boolean isExists = false;
+            using (IDatabase db = dbFactory.CreateSession(connectionString, true, Provider)) {
+                // NOTE: EXISTS and COUNT in sqlite return object {long} type and value is case-sensitive
+                productCount = db.NQueryScalar<Int64>("SELECT COUNT(0) FROM Product WHERE CategoryId = @Category", new {Category = categoryId});
+                isExists = Convert.ToBoolean(
+                    db.QueryScalar<Int64>(
+                        "SELECT EXISTS (SELECT * FROM sqlite_master WHERE type = 'table' AND name = @0);", "Product"));
+
+                nullableCount = db.QueryScalar<Int64?>("SELECT 1");
+            }
+
+            Assert.IsTrue(productCount != 0);
+            Assert.IsTrue(productCount > 1);
+
+            Assert.IsTrue(isExists);
+
+            Assert.AreEqual(nullableCount, 1);
+        }
+
+        [TestMethod]
+        public void QuerySingleTest() {
             const String productId = "PROD07341";
             ProductViewModel pVM = null;
             var query = new StringBuilder()
@@ -152,9 +217,6 @@ namespace Databossy.Test
         }
 
         [TestMethod]
-        public void WithTransactionTest()
-        {
-            
-        }
+        public void WithTransactionTest() { }
     }
 }
